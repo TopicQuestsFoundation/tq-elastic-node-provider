@@ -7,7 +7,7 @@
 <!-- @license Apache2                                  					     -->
 <!-- ======================================================================= -->
 
-<project name="TQElasticNodeProvider" default="compile" basedir=".">
+<project name="TQElasticNodeProvider" default="compile" basedir="." >
 
 	<!--  properties -->
 	<property file="build.properties" />
@@ -20,7 +20,7 @@
 	<property name="lib.dir" value="${basedir}/lib" />
 	<property name="classes.dir" value="${basedir}/classes" />
 
-	<property name="compile.debug" value="on" />
+	<property name="compile.debug" value="true" />
 	<property name="compile.deprecation" value="on" />
 	<property name="complle.optimize" value="on" />
 

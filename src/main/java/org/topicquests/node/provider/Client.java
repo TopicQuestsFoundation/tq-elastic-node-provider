@@ -6,10 +6,8 @@ package org.topicquests.node.provider;
 
 import java.util.*;
 
-import org.elasticsearch.action.get.MultiGetRequestBuilder;
-import org.elasticsearch.common.settings.ImmutableSettings;
-//import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.nex.util.LRUCache;
 import org.topicquests.common.ResultPojo;
 import org.topicquests.common.api.IResult;
@@ -17,17 +15,6 @@ import org.topicquests.node.provider.api.IErrorMessages;
 import org.topicquests.node.provider.api.IVersionable;
 import org.topicquests.util.ConfigurationHelper;
 import org.topicquests.util.TextFileHandler;
-
-import com.google.gson.Gson;
-
-
-
-
-
-
-
-
-
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
@@ -36,11 +23,15 @@ import io.searchbox.core.Count;
 import io.searchbox.core.CountResult;
 import io.searchbox.core.Delete;
 import io.searchbox.core.Doc;
+import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Get;
 import io.searchbox.core.Index;
 import io.searchbox.core.MultiGet;
 import io.searchbox.core.MultiSearch;
+import io.searchbox.core.MultiSearchResult;
+//import io.searchbox.core.MultiSearch;
 import io.searchbox.core.Search;
+import io.searchbox.core.SearchResult;
 import io.searchbox.core.Update;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
@@ -83,6 +74,19 @@ public class Client {
         System.out.println("Client "+client);
 	}
 	
+	public Client(ProviderEnvironment env, String index, JSONObject mappings) {
+		environment = env;
+		Collection<String> uris = getClusters();
+		JestClientFactory factory = new JestClientFactory();
+        factory.setHttpClientConfig(new HttpClientConfig.Builder(uris)
+                .multiThreaded(true)
+                .build());
+        client = factory.getObject();
+        handler = new TextFileHandler();
+        createIndex(index, mappings);
+        System.out.println("Client "+client);
+	}
+	
 	/**
 	 * Index <code>object</code>
 	 * @param id
@@ -112,16 +116,7 @@ public class Client {
 		return result;
 	}
 
-
-	/**
-	 * Update an already-indexed node
-	 * @param id
-	 * @param index
-	 * @param object
-	 * @param checkVersion
-	 * @return
-	 */
-	public IResult updateNode(String id, String index, JSONObject object, boolean checkVersion) {
+	public IResult updateFullNode(String id, String index, JSONObject object, boolean checkVersion) {
 		IResult result = null;
 		if (checkVersion) {
 			result = this.compareVersions(id, index, object);
@@ -129,10 +124,33 @@ public class Client {
 				return result; // we had an OptimisticLockException
 			//Returns the current version in resultObjectA
 			//Otherwise, continue using result, including any error messages
-		} else {
-			//otherwise, just go ahead and update
-			result = new ResultPojo();
 		}
+		//otherwise, just go ahead and update
+		result = new ResultPojo();
+		IResult r = this.deleteNode(id, index);
+		if (r.hasError())
+			result.addErrorString(r.getErrorString());
+		r = this.indexNode(id, index, object);
+		if (r.hasError())
+			result.addErrorString(r.getErrorString());
+		this.objectCache.add(id, object);
+		return result;
+	}
+
+	/**
+	 * <p>Update an already-indexed node</p>
+	 * <p>NOTE: <code>object</code> is <em>not</em> a full document.
+	 * Rather, it is a change script.</p>
+	 * <p> IF <code>checkVersion</code> is <code>true</code>, <code>object</code>
+	 * <em>must include</code> the new version value</p>
+	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html
+	 * @param id
+	 * @param index
+	 * @param object is a script, not a document
+	 * @return
+	 */
+	public IResult partialUpdateNode(String id, String index, JSONObject object) {
+		IResult result = new ResultPojo();
 		try {
 			
 			Update b = new Update.Builder(object.toJSONString())
@@ -140,9 +158,8 @@ public class Client {
 				.type(_TYPE)
 				.id(id)
 				.build();
-			client.execute(b);
-			objectCache.add(id, object); // latest version
-			System.out.println("CLIENT_UPDATE "+id+" "+objectCache.get(id));
+			DocumentResult dr = client.execute(b);
+			System.out.println("CLIENT_UPDATE "+id+" "+dr.getErrorMessage());
 		} catch (Exception e) {
 			result.addErrorString(e.getMessage());
 			environment.logError(e.getMessage(), e);
@@ -171,6 +188,46 @@ public class Client {
 			e.printStackTrace();			
 		}
 		return result;
+	}
+	
+	/**
+	 * Returns <code>true</code> if node identified by <code>id</code> is found
+	 * @param id
+	 * @param index
+	 * @return
+	 */
+	public IResult existsNode(String id, String index) {
+		IResult result = new ResultPojo();
+		//first, see if it's cached locally
+		if (objectCache.get(id) != null) {
+			result.setResultObject(new Boolean(true));
+			return result;
+		}
+		try {
+			Get get = new Get.Builder(index, id)
+				.type(_TYPE)
+				.build();
+
+			JestResult rs = client.execute(get);
+			String n = rs.getJsonString();
+			environment.logDebug("Client.getNodeAsJSONObject "+n);
+			JSONObject jo = null;
+			if (n != null) {
+				jo = (JSONObject)new JSONParser(JSONParser.MODE_JSON_SIMPLE).parse(n);
+			}
+			System.out.println("Client.getNodeAsJSONObject "+n);
+			Boolean t = (Boolean)jo.get("found");
+			if (t) {
+				result.setResultObject(new Boolean(true));
+			} else 
+				result.setResultObject(new Boolean(false));
+		} catch (Exception e) {
+			result.addErrorString(e.getMessage());
+			environment.logError(e.getMessage(), e);
+			e.printStackTrace();
+			result.setResultObject(new Boolean(false));
+		}
+		return result;		
 	}
 	
 	/**
@@ -259,15 +316,55 @@ public class Client {
 		}
 		return result;
 	}
-	/** Not ready for this yet
-	public IResult multiSearch(List<String> query, String index) {
+	
+	/**
+	 * Perform a search on a list of query strings
+	 * @param query
+	 * @param index
+	 * @return
+	 */
+	public IResult multiSearchNodes(List<String> query, String index) {
 		IResult result = new ResultPojo();
 		Collection<Search> l = new ArrayList<>();
-		//TODO
+		Iterator<String>sis = query.iterator();
+		while (sis.hasNext()) {
+			l.add(new Search.Builder(sis.next()).build());
+		}
 		try {
 			 MultiSearch get = new MultiSearch.Builder(l).build();
-			 JestResult rs = client.execute(get);
-			 //TODO
+			 MultiSearchResult rslt = client.execute(get);
+			 List<MultiSearchResult.MultiSearchResponse> responses = rslt.getResponses();
+			 if (responses != null && responses.size() > 0) {
+				 List<JSONObject>hits = new ArrayList<JSONObject>();
+				 result.setResultObject(hits);
+			     MultiSearchResult.MultiSearchResponse complexSearchResponse;
+			     JestResult rs;
+			     String n;
+			     JSONParser p = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
+			     JSONObject jo;
+			     List<JSONObject>dx;
+			     Iterator<JSONObject>itx;
+			     Iterator<MultiSearchResult.MultiSearchResponse>itm = responses.iterator();
+			     while (itm.hasNext()) {
+			    	complexSearchResponse = itm.next();
+			    	rs = complexSearchResponse.searchResult;			    	 
+					n = rs.getJsonString();
+
+					if (n != null) {
+						
+						jo = (JSONObject)p.parse(n);
+						dx = (List<JSONObject>)jo.get("docs");
+						if (dx != null) {
+							itx = dx.iterator();
+							while (itx.hasNext()) {
+								jo = itx.next();
+								jo = (JSONObject)jo.get("_source");
+								hits.add(jo);
+							}
+						}
+					}
+			     }
+			 }
 		} catch (Exception e) {
 			result.addErrorString(e.getMessage());
 			environment.logError(e.getMessage(), e);
@@ -276,8 +373,14 @@ public class Client {
 		
 		return result;
 	}
-	*/
-	/** not ready for this yet
+	
+	
+	/**
+	 * Returns Double or -1 if error
+	 * @param query
+	 * @param index
+	 * @return
+	 */
 	public IResult count(String query, String index) {
 		IResult result = new ResultPojo();
 		try {
@@ -285,8 +388,43 @@ public class Client {
 				.query(query)
 				.addIndex(index)
 				.addType(_TYPE).build();
-			CountResult rslt = null; //TODO
-			//JEST documentation is far too ambiguous here
+			CountResult rslt = client.execute(count);
+			Double d = rslt.getCount();
+			result.setResultObject(d);
+		} catch (Exception e) {
+			result.addErrorString(e.getMessage());
+			environment.logError(e.getMessage(), e);
+			e.printStackTrace();
+			result.setResultObject(new Double(-1));
+		}
+		return result;
+	}
+	
+	
+	public IResult fetchNodeFromQuery(String query, String index) {
+		IResult result = new ResultPojo();
+		try {
+			Search search = new Search.Builder(query) 
+				.addIndex(index)
+				.addType(_TYPE)
+				.build();
+			JestResult rslt = client.execute(search);
+			String s = rslt.getJsonString();
+			System.out.println("Client.listObjectsByQuery "+s);
+			//{"_index":"topics","_type":"core","_id":"MyFourthNode","_version":1,"found":true,"_source":{"locator":"MyFourthNode","type":"SomeType","label":"My second node","details":"In which we will see how this works","superClasses":["AnotherType","YetAnotherClass"]}}
+			if (s != null) {
+				JSONObject jo = (JSONObject)new JSONParser(JSONParser.MODE_JSON_SIMPLE).parse(s);
+				s = (String)jo.get("_source");
+				JSONObject hits = (JSONObject)jo.get("hits");
+				if (hits != null) {
+					JSONArray l = (JSONArray)hits.get("hits");
+					if (l != null) {
+						jo = (JSONObject)l.get(0);
+						result.setResultObject(jo);
+					}
+				} else 
+					result.setResultObject(null);
+			}
 		} catch (Exception e) {
 			result.addErrorString(e.getMessage());
 			environment.logError(e.getMessage(), e);
@@ -294,6 +432,7 @@ public class Client {
 		}
 		return result;
 	}
+	
 	/**
 	 * 
 	 * @param query
@@ -372,6 +511,28 @@ public class Client {
 			e.printStackTrace();			
 		}
 	}
+	
+	private void createIndex(String index, JSONObject mappy) {
+
+		int foundCode = 0; //too == found, 404 == notfound
+
+		try {
+			JestResult jr = client.execute(new IndicesExists.Builder(index).build());
+			foundCode = jr.getResponseCode();
+			if (foundCode == 404) {
+				jr = client.execute(new CreateIndex.Builder(index).build());
+				createMapping(mappy.toJSONString(), index);
+				createSettings(index);
+				if (jr.getErrorMessage() != null)
+					environment.logError("JestError "+jr.getErrorMessage(), null);
+			}
+		} catch (Exception e) {
+			environment.logError(e.getMessage(), e);
+			e.printStackTrace();			
+		}
+	
+	}
+	
 	private void createIndex() {
 		List<List<String>>indexes = (List<List<String>>)environment.getProperties().get("IndexNames");
 		int len = indexes.size();
@@ -380,7 +541,7 @@ public class Client {
 		JestResult jr;
 		String mappx;
 		int foundCode = 0; //too == found, 404 == notfound
-		JSONObject mappy = null;
+//		JSONObject mappy = null;
 		String _INDEX;
 		for (int i=0;i<len;i++) {
 			_INDEX = indexes.get(i).get(0);
@@ -417,10 +578,12 @@ public class Client {
 		
 		
 		try {
+			Object settingsBuilder = Settings.builder()
+							.loadFromSource(settings).build()
+							.getAsMap();
+			
 			JestResult jr = client.execute(new CreateIndex.Builder(index)
-				.settings(ImmutableSettings.builder()
-						.loadFromSource(settings)
-						.build().getAsMap()).build());
+				.settings(settingsBuilder).build());
 			if (jr.getErrorMessage() != null)
 				environment.logError("JestError "+jr.getErrorMessage(), null);
 		} catch (Exception e) {

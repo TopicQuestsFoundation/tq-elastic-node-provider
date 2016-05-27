@@ -9,6 +9,8 @@ import org.nex.config.ConfigPullParser;
 import org.topicquests.util.LoggingPlatform;
 import org.topicquests.util.Tracer;
 
+import net.minidev.json.JSONObject;
+
 /**
  * @author park
  *
@@ -30,6 +32,16 @@ public class ProviderEnvironment {
 
 	public Client getClient() {
 		return client;
+	}
+	
+	/**
+	 * Create app-specific client
+	 * @param index
+	 * @param mappings
+	 * @return
+	 */
+	public Client createClient(String index, JSONObject mappings) {
+		return new Client(this, index, mappings);
 	}
 	/////////////////////////////
 	// Utilities
