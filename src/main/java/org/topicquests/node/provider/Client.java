@@ -137,7 +137,6 @@ public class Client {
 		r = this.indexNode(id, index, object);
 		if (r.hasError())
 			result.addErrorString(r.getErrorString());
-		
 		return result;
 	}
 
