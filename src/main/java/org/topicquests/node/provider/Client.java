@@ -62,7 +62,7 @@ public class Client {
 	 */
 	public Client(ProviderEnvironment env) {
 		environment = env;
-		objectCache = new LRUCache(512); //That should be enough to buy time
+		objectCache = new LRUCache(1024); //That should be enough to buy time
 		Collection<String> uris = getClusters();
 		JestClientFactory factory = new JestClientFactory();
         factory.setHttpClientConfig(new HttpClientConfig.Builder(uris)
@@ -97,6 +97,7 @@ public class Client {
 	 */
 	public IResult indexNode(String id, String index, JSONObject object) {
 		environment.logDebug("Client.indexNode "+id+" | "+object);
+		System.out.println("Client.indexNode "+id+" | "+object.keySet());
 		IResult result = new ResultPojo();
 		try {
 			Index _index = new Index.Builder(object)
@@ -108,6 +109,7 @@ public class Client {
 			client.execute(_index);
 			//add when we index a node
 			objectCache.add(id, object);
+			System.out.println("CLIENTCACHE "+object.keySet());
 		} catch (Exception e) {
 			result.addErrorString(e.getMessage());
 			environment.logError(e.getMessage(), e);
@@ -117,7 +119,9 @@ public class Client {
 	}
 
 	public IResult updateFullNode(String id, String index, JSONObject object, boolean checkVersion) {
+		System.out.println("Client.updateFull "+id+" "+object.keySet());
 		IResult result = null;
+		objectCache.remove(id);
 		if (checkVersion) {
 			result = this.compareVersions(id, index, object);
 			if (result.getResultObjectA() != null)
@@ -133,7 +137,6 @@ public class Client {
 		r = this.indexNode(id, index, object);
 		if (r.hasError())
 			result.addErrorString(r.getErrorString());
-		this.objectCache.add(id, object);
 		return result;
 	}
 
@@ -150,6 +153,7 @@ public class Client {
 	 * @return
 	 */
 	public IResult partialUpdateNode(String id, String index, JSONObject object) {
+		objectCache.remove(id);
 		IResult result = new ResultPojo();
 		try {
 			
@@ -175,6 +179,7 @@ public class Client {
 	 * @return
 	 */
 	public IResult deleteNode(String id, String index) {
+		objectCache.remove(id);
 		IResult result = new ResultPojo();
 		try {
 			Delete d = new Delete.Builder(id)
@@ -238,11 +243,11 @@ public class Client {
 	 * @return
 	 */
 	public IResult getNodeAsJSONObject(String id, String index) {
+		System.out.println("Client.getNodeAsJSONObject- "+id+" "+index);
 		IResult result = new ResultPojo();
 		//first, see if it's cached locally
-		result.setResultObject(objectCache.get(id));
-		System.out.println("CLIENT_GET "+id+" "+result.getResultObject());
-		if (result.getResultObject() == null) {
+		JSONObject jo = (JSONObject)objectCache.get(id);
+		if (jo == null) {
 			try {
 				Get get = new Get.Builder(index, id)
 					.type(_TYPE)
@@ -251,7 +256,6 @@ public class Client {
 				JestResult rs = client.execute(get);
 				String n = rs.getJsonString();
 				environment.logDebug("Client.getNodeAsJSONObject "+n);
-				JSONObject jo = null;
 				if (n != null) {
 					jo = (JSONObject)new JSONParser(JSONParser.MODE_JSON_SIMPLE).parse(n);
 				}
@@ -260,14 +264,16 @@ public class Client {
 				if (t) {
 					jo = (JSONObject)jo.get("_source");
 					environment.logDebug("Client.getNodeAsJSONObject-1 "+jo.toJSONString());
-					result.setResultObject(jo);
 				} 
 			} catch (Exception e) {
 				result.addErrorString(e.getMessage());
 				environment.logError(e.getMessage(), e);
 				e.printStackTrace();			
 			}
+		} else {
+			System.out.println("Client.getNodeAsJSONObject2 "+id+" "+jo.keySet());
 		}
+		result.setResultObject(jo);
 		return result;
 	}
 
@@ -476,6 +482,9 @@ public class Client {
 		return result;
 	}
 	
+	public void clearCache() {
+		this.objectCache.clear();
+	}
 	///////////////////////
 	// UTILITIES
 	// Dependency on values supplied by an XML config file
@@ -607,8 +616,11 @@ public class Client {
 		// I suspect that calls for a cache here.
 		////////////////////////////////
 		if (jo == null) {
-			result.addErrorString(IErrorMessages.NODE_MISSING+" "+id);
-			return result;
+			jo = (JSONObject)objectCache.get(id);
+			if (jo == null) {
+				result.addErrorString(IErrorMessages.NODE_MISSING+" "+id);
+				return result;
+			}
 		}
 		String ov = (String)jo.get(IVersionable.VERSION_PROPERTY);
 		if (ov != null) {
