@@ -67,6 +67,7 @@ public class Client {
 		JestClientFactory factory = new JestClientFactory();
         factory.setHttpClientConfig(new HttpClientConfig.Builder(uris)
                 .multiThreaded(true)
+                .readTimeout(10000)
                 .build());
         client = factory.getObject();
         handler = new TextFileHandler();
@@ -106,6 +107,7 @@ public class Client {
 					.id(id)
 					.setParameter(Parameters.REFRESH, true)
 					.build();
+			
 			client.execute(_index);
 			//add when we index a node
 			objectCache.add(id, object);
