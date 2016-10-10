@@ -240,7 +240,7 @@ public class Client {
 	 * as a {@link JSONObject}
 	 * @param id
 	 * @param index
-	 * @return
+	 * @return can return a <code>null</code>result
 	 */
 	public IResult getNodeAsJSONObject(String id, String index) {
 		System.out.println("Client.getNodeAsJSONObject- "+id+" "+index);
@@ -264,6 +264,7 @@ public class Client {
 				if (t) {
 					jo = (JSONObject)jo.get("_source");
 					environment.logDebug("Client.getNodeAsJSONObject-1 "+jo.toJSONString());
+					result.setResultObject(jo);
 				} 
 			} catch (Exception e) {
 				result.addErrorString(e.getMessage());
@@ -273,7 +274,7 @@ public class Client {
 		} else {
 			System.out.println("Client.getNodeAsJSONObject2 "+id+" "+jo.keySet());
 		}
-		result.setResultObject(jo);
+		
 		return result;
 	}
 
