@@ -67,7 +67,9 @@ public class Client {
 		JestClientFactory factory = new JestClientFactory();
         factory.setHttpClientConfig(new HttpClientConfig.Builder(uris)
                 .multiThreaded(true)
-                .readTimeout(10000)
+                //.readTimeout(10000)
+                .defaultMaxTotalConnectionPerRoute(50)
+                .maxTotalConnection(80)
                 .build());
         client = factory.getObject();
         handler = new TextFileHandler();
