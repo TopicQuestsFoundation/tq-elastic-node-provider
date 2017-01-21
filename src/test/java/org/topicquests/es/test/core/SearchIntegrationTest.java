@@ -3,7 +3,7 @@
  */
 package org.topicquests.es.test.core;
 
-import org.topicquests.common.api.IResult;
+import org.topicquests.support.api.IResult;
 import org.topicquests.es.test.common.AbstractIntegrationTest;
 
 import io.searchbox.core.Search;

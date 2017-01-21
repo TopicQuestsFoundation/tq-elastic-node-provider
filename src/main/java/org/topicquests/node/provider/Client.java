@@ -8,13 +8,13 @@ import java.util.*;
 
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
-import org.nex.util.LRUCache;
-import org.topicquests.common.ResultPojo;
-import org.topicquests.common.api.IResult;
+import org.topicquests.support.util.LRUCache;
+import org.topicquests.support.ResultPojo;
+import org.topicquests.support.api.IResult;
 import org.topicquests.node.provider.api.IErrorMessages;
 import org.topicquests.node.provider.api.IVersionable;
-import org.topicquests.util.ConfigurationHelper;
-import org.topicquests.util.TextFileHandler;
+import org.topicquests.support.util.ConfigurationHelper;
+import org.topicquests.support.util.TextFileHandler;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;

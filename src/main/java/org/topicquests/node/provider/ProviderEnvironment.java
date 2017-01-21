@@ -5,9 +5,9 @@ package org.topicquests.node.provider;
 
 import java.util.Map;
 
-import org.nex.config.ConfigPullParser;
-import org.topicquests.util.LoggingPlatform;
-import org.topicquests.util.Tracer;
+import org.topicquests.support.config.ConfigPullParser;
+import org.topicquests.support.util.LoggingPlatform;
+import org.topicquests.support.util.Tracer;
 
 import net.minidev.json.JSONObject;
 
