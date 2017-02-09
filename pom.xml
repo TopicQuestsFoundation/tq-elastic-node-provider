@@ -4,7 +4,7 @@
     <groupId>org.topicquests</groupId>
     <artifactId>tq-elastic-node-provider</artifactId>
     <packaging>jar</packaging>
-    <version>0.4.2-SNAPSHOT</version>
+    <version>0.4.3-SNAPSHOT</version>
     <name>tq-elastic-node-provider</name>
     <url>https://github.com/wenzowski/tq-elastic-node-provider</url>
     <developers>

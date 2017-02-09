@@ -4,8 +4,10 @@
 package org.topicquests.node.provider;
 
 
+import java.io.IOException;
 import java.util.*;
 
+import io.searchbox.indices.Refresh;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.topicquests.support.util.LRUCache;
@@ -486,10 +488,32 @@ public class Client {
 		}
 		return result;
 	}
-	
+
+	public IResult refresh() {
+		IResult result = new ResultPojo();
+		Refresh refresh = new Refresh.Builder().build();
+		try {
+			JestResult jestResult = client.execute(refresh);
+			if (!jestResult.isSucceeded()) {
+				result.addErrorString(jestResult.getErrorMessage());
+				environment.logError(jestResult.getErrorMessage(), new IOException());
+			}
+		} catch (IOException e) {
+			result.addErrorString(e.getMessage());
+			environment.logError(e.getMessage(), e);
+			e.printStackTrace();
+		}
+		return result;
+	}
+
 	public void clearCache() {
 		this.objectCache.clear();
 	}
+
+	public JestClient getJestClient() {
+		return client;
+	}
+
 	///////////////////////
 	// UTILITIES
 	// Dependency on values supplied by an XML config file
