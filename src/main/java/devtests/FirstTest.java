@@ -17,7 +17,7 @@ public class FirstTest {
 	 * 
 	 */
 	public FirstTest() {
-		environment = new ProviderEnvironment();
+		environment = ProviderEnvironment.getInstance();
 		client = environment.getClient();
 		System.out.println("Client "+client);
 	}

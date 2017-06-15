@@ -24,7 +24,7 @@ public abstract class AbstractIntegrationTest extends ESIntegTestCase {
     public void setUp() throws Exception {
     	super.setUp();
     	System.out.println("STARTING");
-        environment = new ProviderEnvironment();
+        environment = ProviderEnvironment.getInstance();
         client = environment.getClient();
     }
 

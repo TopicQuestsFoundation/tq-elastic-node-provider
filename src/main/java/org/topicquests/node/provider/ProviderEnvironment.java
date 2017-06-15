@@ -24,7 +24,7 @@ public class ProviderEnvironment {
 	/**
 	 * 
 	 */
-	public ProviderEnvironment() {
+	private ProviderEnvironment() {
 		ConfigPullParser p = new ConfigPullParser("provider-config.xml");
 		configProps = p.getProperties();
 		System.out.println("Client config "+configProps);
@@ -33,10 +33,13 @@ public class ProviderEnvironment {
 	}
 		
 	/**
-	 * Can return <code>null</code>
+	 * The only way for multiple users in the same JVM to boot
+	 * this platform.
 	 * @return
 	 */
 	public static ProviderEnvironment getInstance() {
+		if (instance == null)
+			instance = new ProviderEnvironment();
 		return instance;
 	}
 
