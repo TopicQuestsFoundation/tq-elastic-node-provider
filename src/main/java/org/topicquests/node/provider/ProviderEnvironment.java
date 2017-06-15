@@ -29,9 +29,9 @@ public class ProviderEnvironment {
 		configProps = p.getProperties();
 		System.out.println("Client config "+configProps);
 		client = new Client(this);
-		instance = this;
+		instance = this;		
 	}
-	
+		
 	/**
 	 * Can return <code>null</code>
 	 * @return
