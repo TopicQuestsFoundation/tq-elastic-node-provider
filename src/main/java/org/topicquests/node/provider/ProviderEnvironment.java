@@ -19,6 +19,7 @@ public class ProviderEnvironment {
 	private LoggingPlatform log = LoggingPlatform.getInstance("logger.properties");
 	private Map<String,Object>configProps;
 	private Client client;
+	private static ProviderEnvironment instance = null;
 
 	/**
 	 * 
@@ -28,6 +29,15 @@ public class ProviderEnvironment {
 		configProps = p.getProperties();
 		System.out.println("Client config "+configProps);
 		client = new Client(this);
+		instance = this;
+	}
+	
+	/**
+	 * Can return <code>null</code>
+	 * @return
+	 */
+	public static ProviderEnvironment getInstance() {
+		return instance;
 	}
 
 	public Client getClient() {
