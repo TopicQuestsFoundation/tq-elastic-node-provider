@@ -22,14 +22,22 @@ public class ProviderEnvironment {
 	private static ProviderEnvironment instance = null;
 
 	/**
-	 * 
+	 * Create with a different configuration file
+	 * @param configFilePath
 	 */
-	private ProviderEnvironment() {
-		ConfigPullParser p = new ConfigPullParser("provider-config.xml");
+	public ProviderEnvironment(String configFilePath) {
+		ConfigPullParser p = new ConfigPullParser(configFilePath);
 		configProps = p.getProperties();
 		System.out.println("Client config "+configProps);
 		client = new Client(this);
-		instance = this;		
+		instance = this;				
+	}
+	
+	/**
+	 * 
+	 */
+	private ProviderEnvironment() {
+		this("provider-config.xml");
 	}
 		
 	/**
