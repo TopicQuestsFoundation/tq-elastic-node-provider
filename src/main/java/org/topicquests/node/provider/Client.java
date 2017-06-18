@@ -267,7 +267,7 @@ public class Client {
 				}
 				System.out.println("Client.getNodeAsJSONObject "+n);
 				Boolean t = (Boolean)jo.get("found");
-				if (t) {
+				if (t != null && t) {
 					jo = (JSONObject)jo.get("_source");
 					environment.logDebug("Client.getNodeAsJSONObject-1 "+jo.toJSONString());
 					result.setResultObject(jo);
