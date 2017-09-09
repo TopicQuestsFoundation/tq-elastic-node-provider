@@ -1,6 +1,7 @@
 package org.topicquests.es.test.common;
 
 import org.elasticsearch.test.ESIntegTestCase;
+import org.elasticsearch.test.ESTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
