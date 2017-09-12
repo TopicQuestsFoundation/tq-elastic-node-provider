@@ -81,7 +81,7 @@ jobs:
                 </profiles>
               </settings>
             EOF
-            gpg --batch --fast-import ./circleci/codesigning.asc;
+            gpg --batch --fast-import .circleci/codesigning.asc;
             if [ "${CIRCLE_BRANCH}" == "develop" ]; then
               echo "Deploying snapshot to sonatype";
               mvn deploy -DskipTests;
