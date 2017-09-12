@@ -32,7 +32,6 @@ jobs:
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "pom.xml" }}
-          - v1-dependencies-
       - run: mvn test
   audit:
     <<: *defaults
@@ -41,7 +40,6 @@ jobs:
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "pom.xml" }}
-          - v1-dependencies-
       - run: mvn dependency-check:check
   deploy:
     <<: *defaults
@@ -50,7 +48,6 @@ jobs:
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "pom.xml" }}
-          - v1-dependencies-
       - deploy:
           command: |
             cat > ~/.m2/settings.xml <<- EOF
