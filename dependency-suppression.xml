@@ -5,4 +5,12 @@
         <cve>CVE-2015-5262</cve>
         <cve>CVE-2014-3577</cve>
     </suppress>
+    <suppress>
+        <!-- false positive only affects jackson-dataformat-xml not jackson-core-->
+        <gav regex="true">^com\.fasterxml\.jackson\.(core:jackson-core|dataformat:jackson-dataformat-cbor):.*$</gav>
+        <!-- see https://github.com/FasterXML/jackson-dataformat-xml/issues/190 -->
+        <cve>CVE-2016-7051</cve>
+        <!-- see https://github.com/jeremylong/DependencyCheck/issues/517 -->
+        <cve>CVE-2016-3720</cve>
+    </suppress>
 </suppressions>
