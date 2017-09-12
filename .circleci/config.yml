@@ -109,10 +109,15 @@ workflows:
             tags:
               only: /.*/
       - hold:
-         type: approval
-         requires:
+          type: approval
+          requires:
             - test
             - audit
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+/
+            branches:
+              only: /^develop$/
       - deploy:
           context: org-global
           requires:
