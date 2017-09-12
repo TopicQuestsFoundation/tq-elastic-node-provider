@@ -6,7 +6,7 @@
     <packaging>jar</packaging>
     <version>0.4.3-SNAPSHOT</version>
     <name>tq-elastic-node-provider</name>
-    <url>https://github.com/wenzowski/tq-elastic-node-provider</url>
+    <url>https://github.com/topicquests/tq-elastic-node-provider</url>
     <developers>
         <developer>
             <email>jackpark@topicquests.org</email>
@@ -159,8 +159,8 @@
         </license>
     </licenses>
     <scm>
-        <url>https://github.com/wenzowski/tq-elastic-node-provider</url>
-        <connection>scm:git:git://github.com/wenzowski/tq-elastic-node-provider.git</connection>
+        <url>https://github.com/topicquests/tq-elastic-node-provider</url>
+        <connection>scm:git:git://github.com/topicquests/tq-elastic-node-provider.git</connection>
     </scm>
     <distributionManagement>
         <snapshotRepository>
