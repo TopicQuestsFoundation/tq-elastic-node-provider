@@ -33,7 +33,7 @@ jobs:
           keys:
           - v1-dependencies-{{ checksum "pom.xml" }}
           - v1-dependencies-
-      - run: mvn clean test
+      - run: mvn test
   audit:
     <<: *defaults
     steps:
@@ -42,7 +42,7 @@ jobs:
           keys:
           - v1-dependencies-{{ checksum "pom.xml" }}
           - v1-dependencies-
-      - run: mvn clean dependency-check:check
+      - run: mvn dependency-check:check
   deploy:
     <<: *defaults
     steps:
@@ -84,11 +84,11 @@ jobs:
             gpg --batch --fast-import ./circleci/codesigning.asc;
             if [ "${CIRCLE_BRANCH}" == "develop" ]; then
               echo "Deploying snapshot to sonatype";
-              mvn clean deploy -DskipTests;
+              mvn deploy -DskipTests;
             elif [[ "${CIRCLE_TAG}" =~ ^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
               echo "Deploying release ${CIRCLE_TAG} to sonatype";
               mvn versions:set -DnewVersion=${CIRCLE_TAG};
-              mvn clean deploy -DskipTests;
+              mvn deploy -DskipTests;
             else
               echo "Skipping deployment";
             fi
